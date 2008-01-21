@@ -50,8 +50,26 @@ static int core_udp_connect(nc_sock_t *ncsock)
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = ncsock->local_port.netnum;
-  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
-	 sizeof(myaddr.sin_addr));
+  if (ncsock->mcst_host.iaddrs[0].s_addr == 0) {
+    memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+	   sizeof(myaddr.sin_addr));
+  }
+  else {
+    memcpy(&myaddr.sin_addr, &ncsock->mcst_host.iaddrs[0],
+	   sizeof(myaddr.sin_addr));
+    /* subscribe the requested multicast group */
+    struct ip_mreq mreq;
+    memset(&mreq, 0, sizeof(mreq));
+    mreq.imr_multiaddr.s_addr = ncsock->mcst_host.iaddrs[0].s_addr;
+    mreq.imr_interface.s_addr = ncsock->local_host.iaddrs[0].s_addr;
+    if (setsockopt(sock,
+                   IPPROTO_IP,
+                   IP_ADD_MEMBERSHIP,
+                   &mreq, sizeof (mreq)) < 0) {
+      ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "multicast: IP_ADD_MEMBERSHIP");
+      goto err;
+    }
+  }
   /* only call bind if it is really needed */
   if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
     ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
@@ -59,13 +77,15 @@ static int core_udp_connect(nc_sock_t *ncsock)
       goto err;
   }
 
-  /* now prepare myaddr for the connect() call */
-  myaddr.sin_family = AF_INET;
-  myaddr.sin_port = ncsock->port.netnum;
-  memcpy(&myaddr.sin_addr, &ncsock->host.iaddrs[0], sizeof(myaddr.sin_addr));
-  ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
-  if (ret < 0)
-    goto err;
+  if (ncsock->mcst_host.iaddrs[0].s_addr==0) {
+    /* now prepare myaddr for the connect() call */
+    myaddr.sin_family = AF_INET;
+    myaddr.sin_port = ncsock->port.netnum;
+    memcpy(&myaddr.sin_addr, &ncsock->host.iaddrs[0], sizeof(myaddr.sin_addr));
+    ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+    if (ret < 0)
+      goto err;
+  }
 
   return sock;
 
@@ -86,6 +106,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
   int sockopt = 1;
 #endif
   struct sockaddr_in myaddr;
+  struct sockaddr_in mcst_addr;
   struct timeval tt;		/* needed by the select() call */
   debug_v(("core_udp_listen(ncsock=%p)", (void *)ncsock));
 
@@ -118,14 +139,41 @@ static int core_udp_listen(nc_sock_t *ncsock)
     /* prepare myaddr for the bind() call */
     myaddr.sin_family = AF_INET;
     myaddr.sin_port = ncsock->local_port.netnum;
-    memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+
+    if (ncsock->mcst_host.iaddrs[0].s_addr != 0) {
+      memcpy(&myaddr.sin_addr, &ncsock->mcst_host.iaddrs[0],
+	     sizeof(myaddr.sin_addr));
+    }
+    else {
+      memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+	     sizeof(myaddr.sin_addr));
+    }
+
+    memcpy(&mcst_addr.sin_addr, &ncsock->mcst_host.iaddrs[0],
 	   sizeof(myaddr.sin_addr));
+
     /* bind() MUST be called in this function, since it's the final call for
        this type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
     ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
     if (ret < 0)
       goto err;
+    if (mcst_addr.sin_addr.s_addr != 0) {
+      debug(("(core_udp_listen) IP_ADD_MEMBERSHIP\n"));
+      struct ip_mreq mreq;
+      memset(&mreq, 0, sizeof(mreq));
+      mreq.imr_multiaddr.s_addr = mcst_addr.sin_addr.s_addr;
+      mreq.imr_interface.s_addr = ncsock->local_host.iaddrs[0].s_addr;
+      if (setsockopt(sock,
+                     IPPROTO_IP,
+                     IP_ADD_MEMBERSHIP,
+                     &mreq, sizeof (mreq)) < 0) {
+        ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "multicast: IP_ADD_MEMBERSHIP");
+        goto err;
+      }
+    }
+
   }
+
 
 #ifdef USE_PKTINFO
   /* set the right flag in order to obtain the ancillary data */
@@ -275,6 +323,8 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	memcpy(&dup_socket.local_host.iaddrs[0], &local_addr.sin_addr,
 	       sizeof(local_addr));
 	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr,
+	       sizeof(local_addr));
+	memcpy(&dup_socket.mcst_host.iaddrs[0], &mcst_addr.sin_addr,
 	       sizeof(local_addr));
 	dup_socket.local_port.netnum = local_addr.sin_port;
 	dup_socket.local_port.num = ntohs(local_addr.sin_port);

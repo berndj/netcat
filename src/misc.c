@@ -324,6 +324,7 @@ void netcat_printhelp(char *argv0)
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
 "  -r, --randomize            randomize local and remote ports\n"
+"  -m, --multicast=ADDRESS    multicast group (ip or groupname)\n"
 "  -s, --source=ADDRESS       local source address (ip or hostname)\n"));
 #ifndef USE_OLD_COMPAT
   printf(_(""

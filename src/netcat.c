@@ -143,6 +143,7 @@ int main(int argc, char *argv[])
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
   nc_host_t remote_host;
+  nc_host_t mcast_host;
   nc_sock_t listen_sock;
   nc_sock_t connect_sock;
   nc_sock_t stdio_sock;
@@ -150,6 +151,7 @@ int main(int argc, char *argv[])
   memset(&local_port, 0, sizeof(local_port));
   memset(&local_host, 0, sizeof(local_host));
   memset(&remote_host, 0, sizeof(remote_host));
+  memset(&mcast_host, 0, sizeof(mcast_host));
   memset(&listen_sock, 0, sizeof(listen_sock));
   memset(&connect_sock, 0, sizeof(listen_sock));
   memset(&stdio_sock, 0, sizeof(stdio_sock));
@@ -199,6 +201,7 @@ int main(int argc, char *argv[])
 	{ "tunnel-port", required_argument,	NULL, 'P' },
 	{ "randomize",	no_argument,		NULL, 'r' },
 	{ "source",	required_argument,	NULL, 's' },
+	{ "multicast",	required_argument,	NULL, 'm' },
 	{ "tunnel-source", required_argument,	NULL, 'S' },
 #ifndef USE_OLD_COMPAT
 	{ "tcp",	no_argument,		NULL, 't' },
@@ -216,7 +219,7 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "cde:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z",
+    c = getopt_long(argc, argv, "cde:g:G:hi:lL:no:p:P:rs:m:S:tTuvVxw:z",
 		    long_options, &option_index);
     if (c == -1)
       break;
@@ -307,6 +310,18 @@ int main(int argc, char *argv[])
       if (!netcat_resolvehost(&local_host, optarg))
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("Couldn't resolve local host: %s"), optarg);
+      break;
+    case 'm':			/* multicast group */
+      /* check if it is correct multicast address */
+      if (!netcat_resolvehost(&mcast_host, optarg) ||
+          !IN_MULTICAST(htonl(mcast_host.iaddrs[0].s_addr))                                                     )
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("Invalid multicast group: %s"), optarg);
+      ncprint(NCPRINT_VERB2,
+              _("-m option %s:%s:0x%x"),
+              &mcast_host.name[0], 
+              &mcast_host.addrs[0][0],
+              ntohl(mcast_host.iaddrs[0].s_addr));
       break;
     case 'S':			/* used only in tunnel mode (source ip) */
       if (!netcat_resolvehost(&connect_sock.local_host, optarg))
@@ -471,6 +486,7 @@ int main(int argc, char *argv[])
     listen_sock.proto = opt_proto;
     listen_sock.timeout = opt_wait;
     memcpy(&listen_sock.local_host, &local_host, sizeof(listen_sock.local_host));
+    memcpy(&listen_sock.mcst_host, &mcast_host, sizeof(listen_sock.mcst_host));
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));
     memcpy(&listen_sock.host, &remote_host, sizeof(listen_sock.host));
     accept_ret = core_listen(&listen_sock);
