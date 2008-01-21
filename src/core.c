@@ -50,6 +50,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = ncsock->local_port.netnum;
+#ifdef HAVE_STRUCT_IP_MREQ
   if (ncsock->mcst_host.iaddrs[0].s_addr == 0) {
     memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
 	   sizeof(myaddr.sin_addr));
@@ -70,6 +71,10 @@ static int core_udp_connect(nc_sock_t *ncsock)
       goto err;
     }
   }
+#else
+  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+	 sizeof(myaddr.sin_addr));
+#endif
   /* only call bind if it is really needed */
   if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
     ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
@@ -77,7 +82,9 @@ static int core_udp_connect(nc_sock_t *ncsock)
       goto err;
   }
 
+#ifdef HAVE_STRUCT_IP_MREQ
   if (ncsock->mcst_host.iaddrs[0].s_addr==0) {
+#endif
     /* now prepare myaddr for the connect() call */
     myaddr.sin_family = AF_INET;
     myaddr.sin_port = ncsock->port.netnum;
@@ -85,8 +92,9 @@ static int core_udp_connect(nc_sock_t *ncsock)
     ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
     if (ret < 0)
       goto err;
+#ifdef HAVE_STRUCT_IP_MREQ
   }
-
+#endif
   return sock;
 
  err:
@@ -106,7 +114,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
   int sockopt = 1;
 #endif
   struct sockaddr_in myaddr;
+#ifdef HAVE_STRUCT_IP_MREQ
   struct sockaddr_in mcst_addr;
+#endif
   struct timeval tt;		/* needed by the select() call */
   debug_v(("core_udp_listen(ncsock=%p)", (void *)ncsock));
 
@@ -139,7 +149,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     /* prepare myaddr for the bind() call */
     myaddr.sin_family = AF_INET;
     myaddr.sin_port = ncsock->local_port.netnum;
-
+#ifdef HAVE_STRUCT_IP_MREQ
     if (ncsock->mcst_host.iaddrs[0].s_addr != 0) {
       memcpy(&myaddr.sin_addr, &ncsock->mcst_host.iaddrs[0],
 	     sizeof(myaddr.sin_addr));
@@ -151,12 +161,16 @@ static int core_udp_listen(nc_sock_t *ncsock)
 
     memcpy(&mcst_addr.sin_addr, &ncsock->mcst_host.iaddrs[0],
 	   sizeof(myaddr.sin_addr));
-
+#else
+    memcpy(&myaddr.sin_addr, &ncsock->mcst_host.iaddrs[0],
+	   sizeof(myaddr.sin_addr));
+#endif
     /* bind() MUST be called in this function, since it's the final call for
        this type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
     ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
     if (ret < 0)
       goto err;
+#ifdef HAVE_STRUCT_IP_MREQ
     if (mcst_addr.sin_addr.s_addr != 0) {
       debug(("(core_udp_listen) IP_ADD_MEMBERSHIP\n"));
       struct ip_mreq mreq;
@@ -171,7 +185,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
         goto err;
       }
     }
-
+#endif
   }
 
 
@@ -324,8 +338,10 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	       sizeof(local_addr));
 	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr,
 	       sizeof(local_addr));
+#ifdef HAVE_STRUCT_IP_MREQ
 	memcpy(&dup_socket.mcst_host.iaddrs[0], &mcst_addr.sin_addr,
 	       sizeof(local_addr));
+#endif
 	dup_socket.local_port.netnum = local_addr.sin_port;
 	dup_socket.local_port.num = ntohs(local_addr.sin_port);
 	dup_socket.port.netnum = rem_addr.sin_port;

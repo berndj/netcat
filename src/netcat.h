@@ -189,7 +189,10 @@ typedef struct {
 typedef struct {
   int fd, domain, timeout;
   nc_proto_t proto;
-  nc_host_t local_host, host, mcst_host;
+  nc_host_t local_host, host;
+#ifdef HAVE_STRUCT_IP_MREQ
+  nc_host_t mcst_host;
+#endif
   nc_port_t local_port, port;
   nc_buffer_t sendq, recvq;
 } nc_sock_t;
