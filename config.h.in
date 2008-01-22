@@ -175,6 +175,9 @@
 /* Define to 1 if the system has the type `struct in_pktinfo'. */
 #undef HAVE_STRUCT_IN_PKTINFO
 
+/* Define to 1 if the system has the type `struct ip_mreq'. */
+#undef HAVE_STRUCT_IP_MREQ
+
 /* Define to 1 if `sa_len' is member of `struct sockaddr'. */
 #undef HAVE_STRUCT_SOCKADDR_SA_LEN
 
@@ -237,7 +240,7 @@
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
-   automatically deduced at run-time.
+   automatically deduced at runtime.
 	STACK_DIRECTION > 0 => grows toward higher addresses
 	STACK_DIRECTION < 0 => grows toward lower addresses
 	STACK_DIRECTION = 0 => direction of growth unknown */
@@ -248,6 +251,9 @@
 
 /* use the linux-style select(2) call */
 #undef USE_LINUX_SELECT
+
+/* enable multicast support */
+#undef USE_MCAST
 
 /* misc old compat behaviours */
 #undef USE_OLD_COMPAT
@@ -270,10 +276,10 @@
 #undef inline
 #endif
 
-/* Define to `long' if <sys/types.h> does not define. */
+/* Define to `long int' if <sys/types.h> does not define. */
 #undef off_t
 
-/* Define to `unsigned' if <sys/types.h> does not define. */
+/* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t
 
 /* Define to unsigned long or unsigned long long if <inttypes.h> and
