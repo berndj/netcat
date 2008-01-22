@@ -72,7 +72,7 @@ AC_CHECK_MEMBERS(struct sockaddr.sa_len, , , [#include <sys/types.h>
 #include <sys/socket.h>])
 
 dnl Check if it is available the RFC2292 IPv4 extension and in_port_t.
-AC_CHECK_TYPES([struct in_pktinfo, in_port_t], , , [#include <sys/types.h>
+AC_CHECK_TYPES([struct in_pktinfo, in_port_t, struct ip_mreq], , , [#include <sys/types.h>
 #include <netinet/in.h>])
 
 # check if this compiler supports the common parameter `-Wall'
@@ -113,10 +113,9 @@ AC_ARG_ENABLE(oldtelnet, AC_HELP_STRING([--enable-oldtelnet],
 	[use old telnet codes parsing policy (default: no)]),
 	nc_enab_oldtelnet=yes)
 
-AC_ARG_WITH(included-getopt, AC_HELP_STRING([--with-included-getopt],
-	[use the internal getopt library (default: auto)]),
-	nc_need_getopt=yes)
-
+AC_ARG_ENABLE(multicast, AC_HELP_STRING([--enable-multicast],
+	[enable multicast support (default: yes)]),
+	 nc_enab_multicast=$enableval, nc_enab_multicast=default)
 
 # apply the acquired enable options
 if test "x$nc_enab_compat" = "xyes"; then
@@ -131,6 +130,18 @@ if test "x$nc_enab_oldtelnet" = "xyes"; then
   AC_DEFINE(USE_OLD_TELNET,  , [use the old telnet codes parsing policy])
 fi
 
+if test "x$nc_enab_multicast" = "xyes"; then
+  if test "x$ac_cv_type_struct_ip_mreq" != "xyes";then
+    AC_MSG_FAILURE(
+                   [--enable-multicast requires a multicast socket option])
+  fi
+  AC_DEFINE(USE_MCAST,  , [enable multicast support])
+fi
+if test "x$nc_enab_multicast" = "xdefault"; then
+  if test "x$ac_cv_type_struct_ip_mreq" = "xyes";then
+    AC_DEFINE(USE_MCAST,  , [enable multicast support])    
+  fi
+fi
 
 dnl *********************************************************************
 dnl ** SPECIAL FUNCTIONS VALIDITY CHECKING ******************************
