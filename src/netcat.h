@@ -190,7 +190,7 @@ typedef struct {
   int fd, domain, timeout;
   nc_proto_t proto;
   nc_host_t local_host, host;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
   nc_host_t mcst_host;
 #endif
   nc_port_t local_port, port;

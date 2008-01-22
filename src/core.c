@@ -50,7 +50,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = ncsock->local_port.netnum;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
   if (ncsock->mcst_host.iaddrs[0].s_addr == 0) {
     memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
 	   sizeof(myaddr.sin_addr));
@@ -82,7 +82,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
       goto err;
   }
 
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
   if (ncsock->mcst_host.iaddrs[0].s_addr==0) {
 #endif
     /* now prepare myaddr for the connect() call */
@@ -92,7 +92,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
     ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
     if (ret < 0)
       goto err;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
   }
 #endif
   return sock;
@@ -114,7 +114,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
   int sockopt = 1;
 #endif
   struct sockaddr_in myaddr;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
   struct sockaddr_in mcst_addr;
 #endif
   struct timeval tt;		/* needed by the select() call */
@@ -149,7 +149,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     /* prepare myaddr for the bind() call */
     myaddr.sin_family = AF_INET;
     myaddr.sin_port = ncsock->local_port.netnum;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
     if (ncsock->mcst_host.iaddrs[0].s_addr != 0) {
       memcpy(&myaddr.sin_addr, &ncsock->mcst_host.iaddrs[0],
 	     sizeof(myaddr.sin_addr));
@@ -170,7 +170,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
     if (ret < 0)
       goto err;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
     if (mcst_addr.sin_addr.s_addr != 0) {
       debug(("(core_udp_listen) IP_ADD_MEMBERSHIP\n"));
       struct ip_mreq mreq;
@@ -338,7 +338,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	       sizeof(local_addr));
 	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr,
 	       sizeof(local_addr));
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
 	memcpy(&dup_socket.mcst_host.iaddrs[0], &mcst_addr.sin_addr,
 	       sizeof(local_addr));
 #endif

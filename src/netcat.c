@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
   nc_host_t remote_host;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
   nc_host_t mcast_host;
 #endif
   nc_sock_t listen_sock;
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
   memset(&local_port, 0, sizeof(local_port));
   memset(&local_host, 0, sizeof(local_host));
   memset(&remote_host, 0, sizeof(remote_host));
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
   memset(&mcast_host, 0, sizeof(mcast_host));
 #endif
   memset(&listen_sock, 0, sizeof(listen_sock));
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 	{ "tunnel-port", required_argument,	NULL, 'P' },
 	{ "randomize",	no_argument,		NULL, 'r' },
 	{ "source",	required_argument,	NULL, 's' },
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
 	{ "multicast",	required_argument,	NULL, 'm' },
 #endif
 	{ "tunnel-source", required_argument,	NULL, 'S' },
@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
     c = getopt_long(argc, argv, "cde:g:G:hi:lL:no:p:P:rs:m:S:tTuvVxw:z",
 		    long_options, &option_index);
 #else
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("Couldn't resolve local host: %s"), optarg);
       break;
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
     case 'm':			/* multicast group */
       /* check if it is correct multicast address */
       if (!netcat_resolvehost(&mcast_host, optarg) ||
@@ -499,7 +499,7 @@ int main(int argc, char *argv[])
     listen_sock.proto = opt_proto;
     listen_sock.timeout = opt_wait;
     memcpy(&listen_sock.local_host, &local_host, sizeof(listen_sock.local_host));
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
     memcpy(&listen_sock.mcst_host, &mcast_host, sizeof(listen_sock.mcst_host));
 #endif
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));

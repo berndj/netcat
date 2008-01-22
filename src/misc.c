@@ -324,7 +324,7 @@ void netcat_printhelp(char *argv0)
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
 "  -r, --randomize            randomize local and remote ports\n"
-#ifdef HAVE_STRUCT_IP_MREQ
+#ifdef USE_MCAST
 "  -m, --multicast=ADDRESS    multicast group (ip or groupname)\n"
 #endif
 "  -s, --source=ADDRESS       local source address (ip or hostname)\n"));
