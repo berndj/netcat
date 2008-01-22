@@ -162,7 +162,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     memcpy(&mcst_addr.sin_addr, &ncsock->mcst_host.iaddrs[0],
 	   sizeof(myaddr.sin_addr));
 #else
-    memcpy(&myaddr.sin_addr, &ncsock->mcst_host.iaddrs[0],
+    memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
 	   sizeof(myaddr.sin_addr));
 #endif
     /* bind() MUST be called in this function, since it's the final call for
